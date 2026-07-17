@@ -281,7 +281,7 @@ select option {
     width: 100%;
 	text-align: center;
 	min-height: 100px;
-    table-layout: fixed;
+	    table-layout: fixed;
     border-collapse: collapse;
 	font-size: 2rem; /* Augmente la taille du texte */
     border-collapse: collapse;
@@ -1811,15 +1811,8 @@ table.match-table tr.day-separator td {
 /* 1. Colonne de l'heure (fixe et étroite) */
 .next-match-table th:first-child, 
 .next-match-table td:first-child {
-    width: 120px !important; 
+    width: 100px !important; 
     text-align: center !important;
-}
-
-/* 2. Les 3 colonnes de catégories (divisent l'espace restant à parts égales) */
-.next-match-table th:not(:first-child), 
-.next-match-table td:not(:first-child) {
-width: calc((100% - 120px) / 3) !important;
-	text-align: center !important;
 }
 
 /* 3. Ajustement pour que le texte ne dépasse pas */
@@ -1860,6 +1853,9 @@ width: calc((100% - 120px) / 3) !important;
 .tv-card {
     display: flex;
     flex-direction: column;
+	overflow-y: auto;
+    scrollbar-gutter: stable; 
+	overflow-y: scroll; /* Force la barre de défilement à être toujours présente */
 }
 
 /* --- CORRECTIF D'ESPACEMENT VERTICAL --- */
@@ -1894,7 +1890,7 @@ width: calc((100% - 120px) / 3) !important;
 }
 
 /* Les 3 colonnes "Petits/Moyens/Grands" : répartition mathématique exacte */
-.next-match-table th:not(:first-child), 
+
 .next-match-table td:not(:first-child) {
     width: calc((100% - 80px) / 3) !important;
     padding: 4px !important;
@@ -2144,14 +2140,20 @@ width: calc((100% - 120px) / 3) !important;
         margin: 0 !important;
         padding: 0 !important;
     }
+	/* 2. On libère le conteneur principal .app */
+    .app {
+        height: auto !important;
+        min-height: auto !important; /* C'EST LUI QUI BLOQUAIT LE SCROLL */
+        padding: 10px !important;
+    }
 
     /* On nettoie les conteneurs TV pour le scroll */
     .tv-v9, .tv-screen {
         height: auto !important;
-        min-height: 100vh !important;
+        min-height: auto !important;
         width: 100vw !important;
         display: block !important;
-        overflow-y: auto !important;
+        overflow-y: visible !important;
         overflow-x: hidden !important;
     }
 
@@ -2190,6 +2192,10 @@ width: calc((100% - 120px) / 3) !important;
         width: 60px !important;  /* Réduit de 105px à 60px */
         height: 40px !important; /* Réduit de 70px à 40px */
     }
+	/* 3. On s'assure que le body laisse respirer le contenu */
+    body {
+        padding-bottom: 40px !important; /* Pour ne pas coller en bas */
+    }
 }
 /* --- PAGE PARTENAIRES (Image plein écran sans bloquer le scroll) --- */
 .tv-screen.partner-page {
@@ -2210,6 +2216,32 @@ width: calc((100% - 120px) / 3) !important;
     width: 100% !important;
     height: auto !important; /* L'image s'ajuste en hauteur tout en prenant toute la largeur */
     object-fit: contain; 
+}
+
+@keyframes pulse-gold {
+    0% { text-shadow: 0 0 10px var(--gold); opacity: 1; }
+    50% { text-shadow: 0 0 30px var(--gold); opacity: 0.8; }
+    100% { text-shadow: 0 0 10px var(--gold); opacity: 1; }
+}
+
+.ready-pulse {
+    animation: pulse-gold 2s infinite;
+}
+
+.status-bar {
+    width: 300px;
+    height: 6px;
+    background: #111;
+    border: 1px solid #333;
+    margin: 20px auto;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.status-fill {
+    height: 100%;
+    background: var(--gold);
+    width: 85%; /* Barre de chargement simulée */
 }
 
 </style>
@@ -2298,8 +2330,8 @@ width: calc((100% - 120px) / 3) !important;
 	// Fonction seed corrigée qui utilise window.uid
     function seed() {
 		const cats = ['Petits', 'Moyens', 'Grands'].map((name, i) => ({ id: window.uid(), name, outboundMinutes: 15, returnMinutes: 10, finalMinutes: 12 }));
-        return { title: 'NAZARIO Ulis Cup', cats, teams:[], matches:[], goals:[], finals:{}, tv:{auto:true, seconds:10}, schedule:{start:'10:00', slot:20, pauseStart:'12:30', pauseMinutes:90} };
-    }
+        return { title: 'NAZARIO Ulis Cup', cats, teams:[], matches:[], goals:[], finals:{}, tv:{auto:true, seconds:10, tvActive: false}, schedule:{start:'10:00', slot:20, pauseStart:'12:30', pauseMinutes:90} };
+	}
     const params = new URLSearchParams(window.location.search);
     window.tab = params.get('view') === 'admin' ? 'admin' : 'tv';
 
@@ -2894,6 +2926,30 @@ function tableStand(rows) {
         </table>
     </div>`;
 }
+function tvComingSoon() {
+    return `
+    <main class="tv-screen" style="justify-content: center; align-items: center; background: #020305;">
+        <div style="text-align: center; color: white;">
+            
+            <div style="font-family: 'Oswald', sans-serif; font-size: 4rem; letter-spacing: 8px; color: var(--gold); text-transform: uppercase;">
+                NAZARIO ULIS CUP
+            </div>
+            
+            <h1 style="font-family: 'Impact', sans-serif; font-size: 6rem; margin: 20px 0; letter-spacing: -2px;">
+                DÉBUT DANS 
+            </h1>
+
+            <div class="status-bar">
+                <div class="status-fill"></div>
+            </div>
+
+
+            <div id="countdown" style="margin-top: 40px; font-family: 'Impact', sans-serif; font-size: 6rem; color: #fff;">
+                00:00:00
+            </div>
+        </div>
+    </main>`;
+}
 function admin(){
 const state = window.state;
     return `
@@ -3323,7 +3379,7 @@ function tvScorers() {
     </main>`;
 }
 function tvNext() {
-    // Utilisation explicite de window.state
+    // 1. Récupération des matchs à venir
     let todo = window.state.matches.filter(m => m.status === 'todo');
     let slots = Array.from(new Set(todo.map(m => JSON.stringify({ day: m.day, time: m.plannedTime }))))
                      .map(JSON.parse)
@@ -3333,23 +3389,31 @@ function tvNext() {
 
     return `
     <main class="tv-screen">
-        <div class="card tv-card" style="margin-top: 0 !important; padding-top: 5px !important; overflow-y: auto; max-height: 85vh;">
+        <!-- On force la scrollbar à être stable pour ne pas décaler les colonnes -->
+        <div class="card tv-card" style="margin-top: 0 !important; padding-top: 5px !important; overflow-y: scroll; max-height: 85vh; scrollbar-gutter: stable;">
             <table class="next-match-table" style="width:100%; table-layout: fixed; border-collapse:collapse; color:white;">
+                
+                <colgroup>
+                    <col style="width: 100px;">
+                    <col style="width: calc((100% - 100px) / 3);">
+                    <col style="width: calc((100% - 100px) / 3);">
+                    <col style="width: calc((100% - 100px) / 3);">
+                </colgroup>
+
                 <thead>
                     <tr style="background: transparent !important; border-bottom: none !important;">
-                        <th style="width:100px;"></th> 
+                        <th></th> 
                         ${window.state.cats.slice(0, 3).map((c, i) => `
-                            <th style="width: 33.33%;">
-                                <div class="pitch-head" style="--cat-color: ${catColors[i]}">
-                                    <span>${c.name}</span>
-                                </div>
-                            </th>
+                        <th>
+                            <div class="pitch-head" style="--cat-color: ${catColors[i]}">
+                                <span>${c.name}</span>
+                            </div>
+                        </th>
                         `).join('')}
                     </tr>
                 </thead>
                 <tbody>
-                    ${slots.map(slot => {
-                        return `
+                    ${slots.length > 0 ? slots.map(slot => `
                         <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
                             <td style="text-align:center; padding:10px 0; font-weight:bold; color:var(--gold);">
                                 J${slot.day} ${slot.time}
@@ -3367,14 +3431,13 @@ function tvNext() {
                                     ` : '—'}
                                 </td>`;
                             }).join('')}
-                        </tr>`;
-                    }).join('')}
+                        </tr>
+                    `).join('') : '<tr><td colspan="4" style="text-align:center; padding: 20px;">Aucun match programmé</td></tr>'}
                 </tbody>
             </table>
         </div>
     </main>`;
 }
-
 function renderModal() {
     // On utilise la variable globale window.modal
     if (!window.modal) return '';
@@ -3557,6 +3620,15 @@ function tvHeader(){
 
 function tv() {
     const isAdmin = localStorage.getItem('tournoi_pwd') === '9350';
+    // Si le mode TV n'est pas actif, on affiche le compte à rebours
+    if (!state.tv.tvActive) {
+        return `
+        <div class="tv-v9">
+            ${tvHeader()}
+            ${isAdmin ? '<div class="tv-toolbar"><button onclick="window.tab=\'admin\'; render()">Admin</button></div>' : ''}
+            ${tvComingSoon()}
+        </div>`;
+    }
     const total = window.TVSCREENS.length;
     const currentScreen = window.TVSCREENS[window.tvIndex % total];
     
@@ -3951,6 +4023,22 @@ setInterval(() => {
             minute: '2-digit', 
             second: '2-digit'
         });
+    }
+	// Calcul du compte à rebours
+    const countdownEl = document.getElementById('countdown');
+    if (countdownEl) {
+        const targetDate = new Date("2026-07-18T10:00:00").getTime();
+        const now = new Date().getTime();
+        const diff = targetDate - now;
+
+        if (diff > 0) {
+            const h = Math.floor(diff / (1000 * 60 * 60));
+            const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const s = Math.floor((diff % (1000 * 60)) / 1000);
+            countdownEl.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+        } else {
+            countdownEl.textContent = "C'EST PARTI !";
+        }
     }
 
     // 2. Mise à jour des timers de match
