@@ -1,11 +1,9 @@
-NAZARIO ULIS CUP — V12.1
+NAZARIO ULIS CUP — V11
 
-Correctif unique : reconstruction complète de l'écran TV 1 selon la maquette validée.
-Aucun autre écran ni aucune logique métier n'a été modifié.
+1. Ouvrir admin.html pour gérer le tournoi.
+2. Ouvrir tv.html dans une autre fenêtre pour le mode TV.
+3. Dans Matchs, les rencontres sont triées par horaire.
+4. Le bouton « Démarrer le créneau » lance jusqu’à trois matchs simultanément, un par catégorie/terrain.
+5. Les trois matchs actifs apparaissent simultanément sur l’écran TV 1.
 
-Lancement :
-- Administration : admin.html
-- Mode TV : tv.html
-- Plein écran : F11
-
-Conseil : utiliser Chrome ou Edge à 100 % de zoom.
+La V11 migre automatiquement les données sauvegardées par la V10.
