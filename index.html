@@ -383,9 +383,10 @@ select option {
    📺 CONFIGURATION MAQUETTE OFFICIELLE — MODE TV COMPLET
    ========================================================================== */
 .tv-v9 {
-    min-height: 100vh;
-    width: 100%; /* Important pour ne plus forcer 1280px */
-    overflow-x: hidden; /* Empêche le décalage latéral */
+    min-height: 100% !important; /* Permet au conteneur de grandir */
+    width: 100%;
+    overflow-x: hidden; 
+    overflow-y: auto !important; /* Force le scroll vertical si le contenu est trop grand */
     background: linear-gradient(rgba(2, 10, 24, 0.55), rgba(2, 10, 24, 0.75)), 
                 url('https://images.unsplash.com/photo-1508098682722-e99c43a406b2?q=80&w=1920&auto=format&fit=crop') center/cover fixed;
     color: #fff;
@@ -667,17 +668,20 @@ CSS
   text-align: center;
 }
 
+/* Centrage parfait du score et du tiret */
 .score-v9 {
-    font-size: 5rem !important; /* Ajuste la valeur (4rem, 5rem...) selon ton besoin */
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    white-space: nowrap !important;
+    font-size: 4rem !important; /* Ajuste la valeur (4rem, 5rem...) selon ton besoin */
     font-weight: bold;
 }
 
-.score-v9 em { 
-    font-style: normal; 
-    color: #ffffff;      /* Reste en blanc */
-    font-size: 0.6em;    /* Réduit la taille du tiret (0.6 au lieu de 1em) */
-    vertical-align: middle; /* Aligne le tiret au milieu verticalement */
-    padding: 0 5px;      /* Réduit un peu l'espace autour */
+.score-v9 em {
+    font-style: normal !important;
+    margin: 0 10px !important; /* Espace entre les chiffres et le tiret */
+    vertical-align: middle !important;
 }
 
 .countdown-panel {
@@ -2172,12 +2176,19 @@ width: calc((100% - 120px) / 3) !important;
     .side-v9 strong {
         white-space: normal !important;
         word-break: break-word !important;
-        font-size: 14px !important;
+        font-size: 12px !important; /* Tu peux baisser à 11px ou 12px ici */
+        line-height: 1.2 !important; /* Ajoute ceci pour que le texte soit bien lisible sur 2 lignes */
     }
 
     /* On cache le superflu pour gagner de l'espace */
     .broadcast-header, .broadcast-time, .broadcast-welcome, .tv-toolbar {
         display: none !important;
+    }
+	
+	/* Réduction de la taille des drapeaux sur mobile */
+    .side-v9 .flag-img {
+        width: 60px !important;  /* Réduit de 105px à 60px */
+        height: 40px !important; /* Réduit de 70px à 40px */
     }
 }
 /* --- PAGE PARTENAIRES (Image plein écran sans bloquer le scroll) --- */
