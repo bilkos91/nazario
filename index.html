@@ -2116,46 +2116,77 @@ width: calc((100% - 120px) / 3) !important;
     justify-content: center;
     padding: 5px;
 }
-/* --- OPTIMISATION MOBILE TOUT-EN-UN --- */
-/* --- OPTIMISATION MOBILE - REMPLACE TON BLOC @MEDIA ACTUEL PAR CELUI-CI --- */
+
+
+/* Supprime l'espace uniquement sur la page partenaire */
+.tv-screen.partner-view {
+    padding-top: 0px !important; /* Réduit l'espace en haut */
+    justify-content: flex-start !important;
+}
+
+/* Optionnel : Si tu veux aussi réduire l'espace en haut de l'image */
+.partner-screen-v9 {
+    margin-top: 0 !important;
+}
+
+/* --- OPTIMISATION MOBILE TOUT-EN-UN (Dernier bloc de ton CSS) --- */
 @media (max-width: 850px) {
-    /* 1. On libère totalement la hauteur sur mobile */
+    /* 1. On autorise le défilement partout */
+    html, body {
+        height: auto !important;
+        overflow-y: auto !important;
+    }
+
+    /* 2. On retire la hauteur fixe (100vh) qui bloque le scroll */
     .tv-v9, .tv-screen {
         height: auto !important;
-        min-height: auto !important; /* On supprime la contrainte 100vh */
+        min-height: 100vh !important;
         display: block !important;
-        overflow-y: auto !important; /* Active le scroll */
-        padding-bottom: 40px !important;
+        overflow-y: visible !important;
     }
 
-    /* 2. Empilement vertical */
-    .live-columns-v9 {
-        display: grid !important;
-        grid-template-columns: 1fr !important;
-        gap: 20px !important;
-        padding: 10px !important;
-        width: 100% !important;
-    }
+		/* On force le passage d'une grille 3 colonnes à 1 colonne unique sur mobile */
+	.live-columns-v9 {
+		display: grid !important;
+		grid-template-columns: 1fr !important; /* Une seule colonne au lieu de 3 */
+		gap: 15px !important;
+		padding: 10px !important;
+		width: 100% !important;
+	}
 
-    /* 3. Les cartes s'adaptent au contenu */
-    .pitch-v9, .board-v9, .tv-card {
-        height: auto !important;
-        min-height: 250px !important;
-        margin-bottom: 15px !important;
-        width: 95% !important;
-        margin-left: auto !important;
-        margin-right: auto !important;
-    }
+	/* On s'assure que les cartes terrain prennent toute la largeur */
+	.pitch-v9 {
+		width: 90% !important;
+		margin: 0 auto 20px auto !important;
+		height: auto !important;
+	}
 
-    /* 4. On cache le header sur mobile pour gagner de la place */
+    /* 5. On cache le header sur mobile */
     .broadcast-header, .broadcast-time, .broadcast-welcome, .tv-toolbar {
         display: none !important;
     }
-
-    /* 5. Ajustements de texte */
-    .score-v9 { font-size: 2.5rem !important; }
-    .pitch-head span { font-size: 1.5rem !important; }
 }
+/* --- PAGE PARTENAIRES (Image plein écran sans bloquer le scroll) --- */
+.tv-screen.partner-page {
+    padding: 0 !important; 
+    width: 100% !important;
+    height: auto !important; /* On passe en auto pour permettre le défilement */
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+}
+
+.partner-screen-v9 {
+    width: 100% !important;
+    height: auto !important;
+}
+
+.partner-screen-v9 img {
+    width: 100% !important;
+    height: auto !important; /* L'image s'ajuste en hauteur tout en prenant toute la largeur */
+    object-fit: contain; 
+}
+
 </style>
 </head>
 <body>
@@ -3084,7 +3115,7 @@ function tvFooter(){
     </footer>`;
 }
 function tvPartners() {
-    return `<main class="tv-screen">
+    return `<main class="tv-screen partner-page">
         <div class="partner-screen-v9">
             <img src="assets/partenaires-panel.jpg" alt="Partenaires">
         </div>
