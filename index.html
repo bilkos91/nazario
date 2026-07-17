@@ -2129,74 +2129,59 @@ table.match-table tr.day-separator td {
     margin-top: 0 !important;
 }
 
-/* --- CORRECTIF MOBILE : SCROLL VERTICAL ET LARGEUR ÉCRAN --- */
 @media (max-width: 850px) {
-    /* On force la racine à ne pas bloquer la hauteur */
+    /* 1. Blocage strict du défilement horizontal */
     html, body {
-        height: auto !important;
-        overflow-x: hidden !important; /* BLOQUE LE DÉBORDEMENT DROITE */
-        overflow-y: auto !important;    /* PERMET LE SCROLL VERTICAL */
-        width: 100vw !important;
+        width: 100% !important;
+        overflow-x: hidden !important;
         margin: 0 !important;
         padding: 0 !important;
-    }
-	/* 2. On libère le conteneur principal .app */
-    .app {
-        height: auto !important;
-        min-height: auto !important; /* C'EST LUI QUI BLOQUAIT LE SCROLL */
-        padding: 10px !important;
+        position: relative !important;
     }
 
-    /* On nettoie les conteneurs TV pour le scroll */
+    /* 2. Forçage du conteneur TV à ne pas dépasser */
     .tv-v9, .tv-screen {
-        height: auto !important;
-        min-height: auto !important;
-        width: 100vw !important;
-        display: block !important;
-        overflow-y: visible !important;
-        overflow-x: hidden !important;
-    }
-
-    /* On stacke tout verticalement */
-    .live-columns-v9, .grid {
+        width: 100% !important;
         display: flex !important;
         flex-direction: column !important;
-        gap: 15px !important;
-        width: 100vw !important;
+        align-items: center !important;
+        overflow-x: hidden !important;
         padding: 0 !important;
     }
 
-    /* Les cartes doivent tenir dans l'écran */
+    /* 3. PRIORITÉ MAXIMALE : Annulation totale du GRID pour le Live */
+    .live-screen-v10 .live-columns-v9, 
+    .live-columns-v9, 
+    .grid {
+        display: flex !important;
+        flex-direction: column !important;
+        grid-template-columns: none !important; /* On tue la grille */
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        align-items: center !important;
+    }
+
+    /* 4. Les cartes doivent être un peu plus étroites que l'écran (92%) */
     .pitch-v9, .board-v9, .tv-card, .card {
-        width: 90vw !important;
+        width: 92% !important; /* Utilise 92% au lieu de 90vw */
         margin: 10px auto !important;
-        height: auto !important;
         box-sizing: border-box !important;
+        display: block !important;
     }
 
-    /* CORRECTION TEXTE COUPÉ : On autorise le retour à la ligne pour le nom des pays */
-    .side-v9 strong {
-        white-space: normal !important;
-        word-break: break-word !important;
-        font-size: 12px !important; /* Tu peux baisser à 11px ou 12px ici */
-        line-height: 1.2 !important; /* Ajoute ceci pour que le texte soit bien lisible sur 2 lignes */
-    }
-
-    /* On cache le superflu pour gagner de l'espace */
+    /* 5. Cacher les éléments inutiles */
     .broadcast-header, .broadcast-time, .broadcast-welcome, .tv-toolbar {
         display: none !important;
     }
-	
-	/* Réduction de la taille des drapeaux sur mobile */
+
+    /* 6. Correction drapeaux */
     .side-v9 .flag-img {
-        width: 60px !important;  /* Réduit de 105px à 60px */
-        height: 40px !important; /* Réduit de 70px à 40px */
-    }
-	/* 3. On s'assure que le body laisse respirer le contenu */
-    body {
-        padding-bottom: 40px !important; /* Pour ne pas coller en bas */
+        width: 50px !important; 
+        height: auto !important;
     }
 }
+
 /* --- PAGE PARTENAIRES (Image plein écran sans bloquer le scroll) --- */
 .tv-screen.partner-page {
     padding: 0 !important; 
