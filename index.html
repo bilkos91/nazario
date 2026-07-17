@@ -2244,6 +2244,19 @@ table.match-table tr.day-separator td {
     width: 85%; /* Barre de chargement simulée */
 }
 
+/* Correction pour les checkboxes dans les cartes */
+.card input[type="checkbox"] {
+    appearance: checkbox !important;
+    -webkit-appearance: checkbox !important;
+    background: none !important;
+    border: none !important;
+    padding: 0 !important;
+    width: auto !important;
+    height: auto !important;
+    display: inline-block !important;
+}
+
+
 </style>
 </head>
 <body>
@@ -2656,21 +2669,23 @@ function confirmScorers() {
     let sa = parseInt(m.sa) || 0;
     let sb = parseInt(m.sb) || 0;
 
-    // 2. Nettoyage des tableaux (on retire les champs vides/nulls)
+    // 2. Nettoyage des tableaux
     let scorersA = (window.modal.a || []).filter(p => p && p.trim() !== "");
     let scorersB = (window.modal.b || []).filter(p => p && p.trim() !== "");
 
-    // 3. VÉRIFICATION : Le nombre de buteurs doit correspondre au score
+    // 3. VÉRIFICATION
     if (scorersA.length !== sa) {
-        alert(`Attention : Tu as saisi ${sa} but(s) pour l'équipe A, mais tu as sélectionné ${scorersA.length} buteur(s). Veuillez corriger.`);
+        alert(`Attention : Tu as saisi ${sa} but(s) pour l'équipe A, mais tu as sélectionné ${scorersA.length} buteur(s).`);
         return;
     }
     if (scorersB.length !== sb) {
-        alert(`Attention : Tu as saisi ${sb} but(s) pour l'équipe B, mais tu as sélectionné ${scorersB.length} buteur(s). Veuillez corriger.`);
+        alert(`Attention : Tu as saisi ${sb} but(s) pour l'équipe B, mais tu as sélectionné ${scorersB.length} buteur(s).`);
         return;
     }
 
-    // 4. Si tout est OK, on enregistre
+    // 4. Enregistrement
+    let catId = m.cat; // On capture la catégorie avant de fermer la modale
+    
     setState(s => {
         let match = s.matches.find(x => x.id === window.modal.match);
         if (!match) return;
@@ -2681,7 +2696,6 @@ function confirmScorers() {
         match.endedAt = Date.now();
         match.winner = window.modal.winner || (sa > sb ? match.a : (sb > sa ? match.b : null));
         
-        // Nettoyage anciens buts et ajout des nouveaux validés
         s.goals = s.goals.filter(g => g.match !== match.id);
         scorersA.forEach(p => s.goals.push({match: match.id, cat: match.cat, team: match.a, player: p}));
         scorersB.forEach(p => s.goals.push({match: match.id, cat: match.cat, team: match.b, player: p}));
@@ -2689,7 +2703,15 @@ function confirmScorers() {
         if (typeof updateNextMatch === 'function') updateNextMatch(s, match);
         window.modal = null;
     });
-    
+
+    // 5. Automatisation du Bracket
+    // Appel direct de la génération pour cette catégorie
+    // On lance la génération automatique en arrière-plan
+window.generateAllKnockoutPhasesSilent();
+	if (typeof window.generateNextFinalRound === 'function') {
+        window.generateNextFinalRound(catId);
+    }
+
     window.save(); 
     render();
 }
@@ -2745,6 +2767,21 @@ function generateAllKnockoutPhases() {
         applySchedule(s.matches);
     });
 }
+
+// Version sans pop-up pour l'automatisation
+function generateAllKnockoutPhasesSilent() {
+    // Copie exacte de ta logique de génération (sans le if(!confirm...))
+    setState(s => {
+        // ... (la même logique de génération que ta fonction actuelle) ...
+        // [Copie ici tout le contenu de ta fonction generateAllKnockoutPhases actuelle, sans la ligne du confirm]
+        s.cats.forEach(c => s.matches = s.matches.filter(m => m.cat !== c.id || m.phase === 'GROUP'));
+        s.cats.forEach(c => {
+             // ... ton code de génération ...
+        });
+        applySchedule(s.matches);
+    });
+}
+
 function getMatchParticipantLabel(id) {
     if (typeof id === 'string' && id.includes('TBD_')) {
         let parts = id.split('_'); // ['TBD', 'BARRAGE'] ou ['TBD', 'QF1']
@@ -2804,7 +2841,6 @@ function generateNextFinalRound(cid) {
     
     alert(`Placement effectué pour ${winners.length} équipe(s).`);
 }
-window.generateNextFinalRound = generateNextFinalRound;
 window.generateNextFinalRound = generateNextFinalRound;
 function updateNextMatch(state, currentMatch) {
     if (currentMatch.phase === 'GROUP') return;
@@ -2975,6 +3011,11 @@ const state = window.state;
                         <input type="file" id="json-importer" accept=".json" style="display:none" onchange="window.importJSON(this.files[0])">
                         <button class="good" onclick="window.exportJSON()">Exporter (Sauvegarder)</button>
                         <button class="warn" onclick="document.getElementById('json-importer').click()">Importer (Restaurer)</button>
+						<label>
+							<input type="checkbox" ${state.tv.tvActive ? 'checked' : ''} 
+							onchange="window.setState(s => s.tv.tvActive = this.checked)">
+					Activer le mode TV (Rotation des écrans)
+					</label>
                     </div>
                     <p><small>L'importation remplace totalement le tournoi actuel.</small></p>
                 </div>
