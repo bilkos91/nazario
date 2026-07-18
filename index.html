@@ -2349,6 +2349,7 @@ table.match-table tr.day-separator td {
 
 
 // 2. ATTACHE-LES À WINDOW (pour que ton HTML/Console les voit)
+	window.hasSeenSplash = false;
 	window.uid = uid;
 	window.modal = null;
 	window.isEditing = false;
@@ -3714,7 +3715,7 @@ function render() {
     if (!root) return;
 
     // --- LOGIQUE MOBILE ENTRY (PAGE 0) ---
-    // Si mobile (< 850px) et que le splash n'a pas encore été vu dans cette session
+    // Si mobile (< 850px) et que le splash n'a pas été vu
     if (window.innerWidth <= 850 && !sessionStorage.getItem('mobileSplashSeen')) {
         root.innerHTML = mobileSplashView();
         
@@ -3726,8 +3727,10 @@ function render() {
             
             if (count <= 0) {
                 clearInterval(timer);
-                sessionStorage.setItem('mobileSplashSeen', 'true'); // Marque le splash comme vu
-                render(); // Relance le rendu pour afficher l'app
+                sessionStorage.setItem('mobileSplashSeen', 'true');
+                window.tvIndex = 0; // CORRIGÉ : Force l'index 0 ("Matchs en cours")
+                window.tvTick = 0;  // Réinitialise le timer de rotation
+                render(); 
             }
         }, 1000);
         return; 
@@ -3785,7 +3788,8 @@ function render() {
         ${window.tab === 'tv' ? content : ''}
         ${renderModal() || ''}
     `;
-}function tvPageTitle(title, color = 'var(--gold)') {
+}
+function tvPageTitle(title, color = 'var(--gold)') {
     return `
     <div class="pitch-head" style="--cat-color: ${color};">
         <span>${title}</span>
