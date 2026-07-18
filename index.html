@@ -2129,58 +2129,6 @@ table.match-table tr.day-separator td {
     margin-top: 0 !important;
 }
 
-@media (max-width: 850px) {
-    /* 1. Blocage strict du défilement horizontal */
-    html, body {
-        width: 100% !important;
-        overflow-x: hidden !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        position: relative !important;
-    }
-
-    /* 2. Forçage du conteneur TV à ne pas dépasser */
-    .tv-v9, .tv-screen {
-        width: 100% !important;
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: center !important;
-        overflow-x: hidden !important;
-        padding: 0 !important;
-    }
-
-    /* 3. PRIORITÉ MAXIMALE : Annulation totale du GRID pour le Live */
-    .live-screen-v10 .live-columns-v9, 
-    .live-columns-v9, 
-    .grid {
-        display: flex !important;
-        flex-direction: column !important;
-        grid-template-columns: none !important; /* On tue la grille */
-        width: 100% !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        align-items: center !important;
-    }
-
-    /* 4. Les cartes doivent être un peu plus étroites que l'écran (92%) */
-    .pitch-v9, .board-v9, .tv-card, .card {
-        width: 92% !important; /* Utilise 92% au lieu de 90vw */
-        margin: 10px auto !important;
-        box-sizing: border-box !important;
-        display: block !important;
-    }
-
-    /* 5. Cacher les éléments inutiles */
-    .broadcast-header, .broadcast-time, .broadcast-welcome, .tv-toolbar {
-        display: none !important;
-    }
-
-    /* 6. Correction drapeaux */
-    .side-v9 .flag-img {
-        width: 50px !important; 
-        height: auto !important;
-    }
-}
 
 /* --- PAGE PARTENAIRES (Image plein écran sans bloquer le scroll) --- */
 .tv-screen.partner-page {
@@ -2240,7 +2188,96 @@ table.match-table tr.day-separator td {
     height: auto !important;
     display: inline-block !important;
 }
+@media (max-width: 850px) {
+    /* 1. RESET GÉNÉRAL */
+    html, body { width: 100% !important; overflow-x: hidden !important; margin: 0 !important; padding: 0 !important; position: relative !important; }
+    
+    /* 2. CONTENEURS TV */
+    .tv-v9, .tv-screen { width: 100% !important; display: flex !important; flex-direction: column !important; align-items: center !important; overflow-x: hidden !important; padding: 0 !important; }
+    .app { width: 100% !important; padding: 10px !important; }
 
+    /* 3. PAGE LIVE & TABLEAUX (Empilement) */
+    .live-screen-v10 .live-columns-v9, .live-columns-v9, .grid, .table-container {
+        display: flex !important; flex-direction: column !important; grid-template-columns: none !important; width: 100% !important; align-items: center !important;
+    }
+    
+    /* 4. CARTES : On autorise le scroll à l'intérieur de la carte */
+    .pitch-v9, .board-v9, .tv-card, .card, .table-container { 
+        width: 92% !important; 
+        margin: 10px auto !important; 
+        box-sizing: border-box !important; 
+        display: block !important;
+        overflow-x: auto !important; 
+    }
+
+    /* 5. TABLEAUX (Priorité Maximale : utilisation de 'body' pour gagner en spécificité) */
+    body .tv-screen .table { 
+        width: auto !important; 
+        min-width: 100% !important; 
+        table-layout: auto !important; 
+        border-collapse: collapse !important; 
+    }
+    
+    /* On cible les td/th avec une haute spécificité pour écraser les anciennes règles */
+    body .tv-screen .table td, 
+    body .tv-screen .table th, 
+    body .tv-screen .table span, 
+    body .tv-screen .table strong { 
+        font-size: 10px !important; 
+        padding: 2px !important; 
+        white-space: nowrap !important; 
+        line-height: 1 !important;
+    }
+    
+    /* Colonne Équipe : on garantit un espace minimum pour le nom */
+    body .tv-screen .table th:nth-child(3), 
+    body .tv-screen .table td:nth-child(3) { 
+        min-width: 60px !important; 
+        text-align: left !important; 
+    }
+
+    /* 6. NETTOYAGE VISUEL */
+    .broadcast-header, .broadcast-time, .broadcast-welcome, .tv-toolbar { display: none !important; }
+    .side-v9 strong { white-space: normal !important; font-size: 12px !important; }
+    .side-v9 .flag-img { width: 30px !important; height: auto !important; }
+}
+/* --- CONFIG MOBILE UNIQUE --- */
+@media (max-width: 850px) {
+    /* 1. Cache le header */
+    .broadcast-header { height: 0 !important; padding: 0 !important; display: none !important; }
+
+    /* 2. Style du conteneur mobile */
+    .mobile-standings-container {
+        display: block !important;
+        width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    /* 3. Style des cartes */
+    .mobile-standings-container .card {
+        width: 100% !important;
+        margin: 0 0 10px 0 !important;
+        padding: 10px !important;
+        float: none !important;
+        overflow: visible !important; /* Important pour laisser le tableau respirer */
+    }
+
+    /* 4. Le tableau scrollable */
+    .table-container {
+        width: 100% !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+        margin-bottom: 10px !important;
+    }
+
+    .mobile-standings-container table {
+        width: 100% !important;
+        font-size: 11px !important;
+        min-width: 350px !important; /* Force le scroll si l'écran est petit */
+        table-layout: auto !important;
+    }
+}	
 
 </style>
 </head>
@@ -2288,11 +2325,16 @@ table.match-table tr.day-separator td {
 	window.tvIndex = 0;
 	window.TVSCREENS = [
     { name: 'Matchs en cours', func: tvLive },
-    { name: 'Classements', func: tvStand },
+    { 
+        name: 'Classements', 
+        // Si largeur < 850px, on appelle tvStandMobile, sinon tvStand
+        func: () => (window.innerWidth <= 850 ? tvStandMobile() : tvStand()) 
+    },
     { name: 'Meilleurs buteurs', func: tvScorers },
     { name: 'Prochains matchs', func: tvNext },
     { name: 'Tableau Final', func: tvBracket },
-    { name: 'Nos partenaires', func: tvPartners }];
+    { name: 'Nos partenaires', func: tvPartners }
+];
 	window.tvTick = 0;
 	window.WC = WC;
     window.state = { title: 'NAZARIO Ulis Cup', cats:[], teams:[], matches:[], goals:[], finals:{}, tv:{auto:true, seconds:10}, schedule:{start:'10:00', slot:20, pauseStart:'12:30', pauseMinutes:90} };
@@ -3350,6 +3392,27 @@ function tvStand() {
         </div>
     </main>`;
 }
+function tvStandMobile() {
+    const catColors = ['var(--u13-color)', 'var(--u15-color)', 'var(--u18-color)'];
+    return `
+    <main class="tv-screen">
+        <div class="mobile-standings-container"> 
+            ${state.cats.map((c, i) => {
+                const teamsA = catTeams(c.id).filter(t => t.pool === 'A');
+                const teamsB = catTeams(c.id).filter(t => t.pool === 'B');
+                return `
+                <div class="card tv-card" style="--cat-color: ${catColors[i % catColors.length]};">
+                    <div class="pitch-head">
+                        <span>${c.name}</span>
+                    </div>
+                    ${teamsA.length > 0 ? `<h3 style="text-align:center; font-size:12px;">POULE A</h3>${tvtableStandMobileV2(getLiveStandings(c.id, 'A'))}` : ''}
+                    ${teamsB.length > 0 ? `<h3 style="text-align:center; font-size:12px;">POULE B</h3>${tvtableStandMobileV2(getLiveStandings(c.id, 'B'))}` : ''}
+                </div>`;
+            }).join('')}
+        </div>
+    </main>`;
+}
+window.tvStandMobile = tvStandMobile;
 
 function tvtableStand(rows) {
     const hasData = rows && rows.length > 0;
@@ -3384,6 +3447,43 @@ function tvtableStand(rows) {
         </table>
     </div>`;
 }
+
+function tvtableStandMobileV2(rows) {
+debugger;
+    const hasData = rows && rows.length > 0;
+    return `
+    <div class="table-container" style="overflow-x: auto; width: 100%; -webkit-overflow-scrolling: touch; background: transparent;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 12px !important; color: white;">
+            <thead>
+                <tr style="color: #888; border-bottom: 1px solid #555;">
+                    <th style="padding: 4px 2px;">#</th>
+                    <th style="padding: 4px 2px;"></th>
+                    <th style="text-align: left; padding: 4px 2px;">ÉQUIPE</th>
+                    <th style="padding: 4px 2px; color: var(--gold);">PTS</th>
+                    <th style="padding: 4px 2px;">J</th>
+                    <th style="padding: 4px 2px;">G</th>
+                    <th style="padding: 4px 2px;">N</th>
+                    <th style="padding: 4px 2px;">P</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${hasData ? rows.map((r, i) => `
+                    <tr style="border-bottom: 1px solid #222; text-align: center;">
+                        <td style="padding: 6px 2px;">${i + 1}</td>
+                        <td style="padding: 6px 2px;">${(typeof flagHTML === 'function' && r.team) ? flagHTML(r.team, r.team?.country) : ''}</td>
+                        <td style="text-align: left; padding: 6px 2px; font-weight: bold;">${r.team?.country || 'Inconnu'}</td>
+                        <td style="padding: 6px 2px; color: var(--gold); font-weight: bold;">${r.pts ?? 0}</td>
+                        <td style="padding: 6px 2px;">${r.j ?? 0}</td>
+                        <td style="padding: 6px 2px;">${r.g ?? 0}</td>
+                        <td style="padding: 6px 2px;">${r.n ?? 0}</td>
+                        <td style="padding: 6px 2px;">${r.p ?? 0}</td>
+                    </tr>
+                `).join('') : '<tr><td colspan="8" style="text-align:center; padding:10px;">Aucune donnée</td></tr>'}
+            </tbody>
+        </table>
+    </div>`;
+}
+window.tvtableStandMobileV2 = tvtableStandMobileV2;
 
 function tvScorers() {
     const catColors = ['var(--u13-color)', 'var(--u15-color)', 'var(--u18-color)'];
@@ -3630,6 +3730,12 @@ function tvPageTitle(title, color = 'var(--gold)') {
 }
 
 function tvHeader(){
+    // Si écran mobile (< 850px), on renvoie un header vide
+    if (window.innerWidth <= 850) {
+        return `<header class="broadcast-header"></header>`;
+    }
+
+    // Sinon, on renvoie le header complet
     let now = new Date();
     return `<header class="broadcast-header">
         <div class="broadcast-brand">
