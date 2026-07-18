@@ -2241,22 +2241,31 @@ table.match-table tr.day-separator td {
     .side-v9 strong { white-space: normal !important; font-size: 12px !important; }
     .side-v9 .flag-img { width: 30px !important; height: auto !important; }
 
-	.partner-screen-v9 {
+	.partner-page {
+        display: flex !important;
+        flex-direction: column !important;
+        height: 100vh !important;
+    }
+
+    /* 2. Le conteneur d'image occupe le reste de l'écran */
+    .partner-screen-v9 {
+        flex: 1 !important; /* Prend tout l'espace disponible */
+        width: 100% !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        overflow: hidden !important;
+        padding: 20px !important;
+    }
+
+    /* 3. L'image remplit la zone sans se déformer */
+    .partner-screen-v9 img {
         width: 100% !important;
         height: 100% !important;
-        overflow-x: auto !important; 
-        overflow-y: hidden !important;
-        display: flex !important;
-        align-items: center !important;
+        object-fit: contain !important; /* Agrandit l'image jusqu'à toucher les bords */
     }
 
-    .partner-screen-v9 img {
-        width: 250% !important; 
-        height: auto !important;
-        object-fit: contain !important;
-        margin: 0 auto;
-    }
-
+  
 }
 
 
