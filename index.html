@@ -2240,7 +2240,27 @@ table.match-table tr.day-separator td {
     .broadcast-header, .broadcast-time, .broadcast-welcome, .tv-toolbar { display: none !important; }
     .side-v9 strong { white-space: normal !important; font-size: 12px !important; }
     .side-v9 .flag-img { width: 30px !important; height: auto !important; }
+
+	.partner-screen-v9 {
+        width: 100% !important;
+        height: 100% !important;
+        overflow-x: auto !important; 
+        overflow-y: hidden !important;
+        display: flex !important;
+        align-items: center !important;
+    }
+
+    .partner-screen-v9 img {
+        width: 250% !important; 
+        height: auto !important;
+        object-fit: contain !important;
+        margin: 0 auto;
+    }
+
 }
+
+
+
 /* --- CONFIG MOBILE UNIQUE --- */
 @media (max-width: 850px) {
     /* 1. Cache le header */
@@ -2351,6 +2371,7 @@ table.match-table tr.day-separator td {
 // 2. ATTACHE-LES À WINDOW (pour que ton HTML/Console les voit)
 	window.hasSeenSplash = false;
 	window.hasShownSplash = false
+	window.isSplashRunning = false; // Le verrou
 	window.uid = uid;
 	window.modal = null;
 	window.isEditing = false;
@@ -3716,8 +3737,11 @@ function render() {
     if (!root) return;
 
     // --- LOGIQUE MOBILE ENTRY (PAGE 0) ---
-    // Si mobile (< 850px) ET qu'on n'a pas encore vu le splash
+    // Si mobile ET splash non vu ET splash pas déjà en cours
     if (window.innerWidth <= 850 && !window.hasShownSplash) {
+        if (window.isSplashRunning) return; // Si le splash tourne déjà, on ne fait RIEN, on attend.
+
+        window.isSplashRunning = true; // On verrouille
         root.innerHTML = mobileSplashView();
         
         let count = 10;
@@ -3728,10 +3752,11 @@ function render() {
             
             if (count <= 0) {
                 clearInterval(timer);
+                window.isSplashRunning = false; // On déverrouille
                 window.hasShownSplash = true; 
                 window.tvIndex = 0;           
                 window.tvTick = 0;            
-                render(); 
+                render(); // Relance le rendu final
             }
         }, 1000);
         return; 
@@ -3793,7 +3818,8 @@ function render() {
         ${window.tab === 'tv' ? content : ''}
         ${renderModal() || ''}
     `;
-}function tvPageTitle(title, color = 'var(--gold)') {
+}
+function tvPageTitle(title, color = 'var(--gold)') {
     return `
     <div class="pitch-head" style="--cat-color: ${color};">
         <span>${title}</span>
@@ -4247,11 +4273,11 @@ function mobileHeader() {
 
     return `
     <header class="mobile-header" style="background:#040e1a; padding:10px 15px; border-bottom:2px solid var(--gold);">
-        <!-- Container Flex pour aligner Logo et Titre verticalement -->
+        <!-- Container Flex pour aligner Logo et Titre -->
         <div style="display:flex; align-items:center; gap:10px; margin-bottom:5px;">
             <img src="assets/logo-nazario.png" style="height:40px; width:auto;" alt="Logo">
-            <h2 style="color:var(--gold); margin:0; font-size:1.1rem; font-family:Impact, sans-serif; line-height:1.1;">
-                NAZARIO<br>ULIS CUP
+            <h2 style="color:var(--gold); margin:0; font-size:1.1rem; font-family:Impact, sans-serif; white-space: nowrap;">
+                NAZARIO ULIS CUP
             </h2>
         </div>
         <!-- Indicateur Écran X/Y -->
