@@ -3716,7 +3716,6 @@ function render() {
     if (!root) return;
 
     // --- LOGIQUE MOBILE ENTRY (PAGE 0) ---
-    // Si mobile (< 850px) ET qu'on n'a pas encore vu le splash durant cette session
     if (window.innerWidth <= 850 && !window.hasShownSplash) {
         root.innerHTML = mobileSplashView();
         
@@ -3728,13 +3727,13 @@ function render() {
             
             if (count <= 0) {
                 clearInterval(timer);
-                window.hasShownSplash = true; // Marque le splash comme vu
-                window.tvIndex = 0;           // Force l'affichage sur "Matchs en cours" (Index 0)
-                window.tvTick = 0;            // Reset le timer
+                window.hasShownSplash = true; 
+                window.tvIndex = 0;           
+                window.tvTick = 0;            
                 render(); 
             }
         }, 1000);
-        return; // On arrête là pour ne pas afficher le reste
+        return; 
     }
     // --- FIN LOGIQUE MOBILE ENTRY ---
 
@@ -3770,6 +3769,7 @@ function render() {
     // 3. Rendu HTML COMPLET
     root.innerHTML = `
         <div class="app ${window.tab === 'tv' ? 'hidden' : ''}">
+            ${window.innerWidth <= 850 ? mobileHeader() : ''}
             <div class="top">
                 <div class="brand"><h1>${state.title}</h1></div>
                 <div class="tabs">
@@ -3820,6 +3820,14 @@ function tvHeader(){
 
 function tv() {
     const isAdmin = localStorage.getItem('tournoi_pwd') === '9350';
+    
+    // On définit la liste des écrans : filtrée sur mobile (on retire l'index 4), complète sur PC
+    const effectiveScreens = (window.innerWidth <= 850) 
+        ? window.TVSCREENS.filter((_, index) => index !== 4) 
+        : window.TVSCREENS;
+    
+    const total = effectiveScreens.length;
+    
     // Si le mode TV n'est pas actif, on affiche le compte à rebours
     if (!state.tv.tvActive) {
         return `
@@ -3829,8 +3837,8 @@ function tv() {
             ${tvComingSoon()}
         </div>`;
     }
-    const total = window.TVSCREENS.length;
-    const currentScreen = window.TVSCREENS[window.tvIndex % total];
+
+    const currentScreen = effectiveScreens[window.tvIndex % total];
     
     return `
     <div class="tv-v9">
@@ -3848,6 +3856,7 @@ function tv() {
                         <option value="${sec}" ${state.tv.seconds === sec ? 'selected' : ''}>${sec}s</option>
                     `).join('')}
                 </select>
+                <!-- On utilise 'total' pour que la navigation soit cohérente avec la liste filtrée -->
                 <button onclick="window.tvIndex=(window.tvIndex + ${total} - 1) % ${total}; render()">◀</button>
                 <button onclick="window.tvIndex=(window.tvIndex + 1) % ${total}; render()">▶</button>
                 <button onclick="window.tab='admin'; render()">Quitter TV</button>
@@ -4201,6 +4210,55 @@ function tvBracket() {
         </div>
     </main>`;
 }
+
+function getAllScreens() {
+    return [
+        { id: 'matches', name: 'MATCHS EN COURS' },
+        { id: 'standings', name: 'CLASSEMENTS' },
+        { id: 'scorers', name: 'MEILLEURS BUTEURS' },
+        { id: 'matches-next', name: 'PROCHAINS MATCHS' }, // Ajuste selon tes besoins
+        { id: 'finals', name: 'TABLEAU FINAL' },
+        { id: 'teams', name: 'ÉQUIPES' }
+    ];
+}
+
+function mobileHeader() {
+    const effectiveScreens = getEffectiveScreens();
+    let title = "";
+    let current = 0;
+    let total = effectiveScreens.length; // Utilise la liste filtrée
+
+    if (window.tab === 'tv') {
+        // On calcule l'index en fonction de la taille réduite
+        current = (window.tvIndex % total) + 1;
+        title = effectiveScreens[window.tvIndex % total].name;
+    } else {
+        const tabs = ['admin', 'teams', 'matches', 'standings', 'finals', 'scorers'];
+        total = tabs.length;
+        current = tabs.indexOf(window.tab) + 1;
+        title = window.tab.toUpperCase();
+    }
+
+    return `
+    <header class="mobile-header" style="background:#040e1a; padding:10px 15px; border-bottom:2px solid var(--gold);">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:5px;">
+            <img src="assets/logo-nazario.png" style="height:30px;" alt="Logo">
+            <h2 style="color:var(--gold); margin:0; font-size:1.1rem; font-family:Impact, sans-serif;">NAZARIO</h2>
+        </div>
+        <div style="color:var(--gold); font-size:0.75rem; font-weight:bold; letter-spacing:1px; border-top:1px solid #333; padding-top:5px; text-transform:uppercase;">
+            ÉCRAN ${current}/${total} • ${title}
+        </div>
+    </header>`;
+}
+function getEffectiveScreens() {
+    // Si mobile (< 850px), on filtre le tableau pour enlever l'index 4 (le 5ème écran)
+    if (window.innerWidth <= 850) {
+        return window.TVSCREENS.filter((_, index) => index !== 4);
+    }
+    return window.TVSCREENS;
+}
+
+
 // 3. ÉCOUTEUR "TEMPS RÉEL" (C'est lui qui remplace onSnapshot)
     onValue(window.stateRef, (snapshot) => {
         const data = snapshot.val();
