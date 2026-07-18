@@ -2278,6 +2278,42 @@ table.match-table tr.day-separator td {
         table-layout: auto !important;
     }
 }	
+@media (max-width: 850px) {
+    /.scorers-grid-v9 {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 15px !important;
+        width: 100% !important;
+        padding: 0 !important;
+    }
+
+    /* 2. On donne aux cartes une largeur totale */
+    .board-v9 {
+        width: 92% !important;
+        margin: 0 auto 15px auto !important;
+        box-sizing: border-box !important;
+    }
+	
+	/* On cible le chemin complet pour être plus spécifique que les autres règles */
+    .board-v9 .scorer-table-v9 th, 
+    .board-v9 .scorer-table-v9 td {
+        font-size: 14px !important;
+        padding: 2px !important;
+    }
+
+    /* On réduit aussi la taille des drapeaux pour gagner de la place */
+    .board-v9 .team-mini .flag-img {
+        width: 18px !important;
+        height: 12px !important;
+    }
+	/* 3. On s'assure que la table à l'intérieur ne dépasse pas */
+    .scorer-table-v9 {
+        width: 100% !important;
+        font-size: 10px !important;
+    }
+
+}
+
 
 </style>
 </head>
