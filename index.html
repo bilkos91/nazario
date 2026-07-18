@@ -4226,13 +4226,16 @@ function getAllScreens() {
 }
 
 function mobileHeader() {
-    const effectiveScreens = getEffectiveScreens();
     let title = "";
     let current = 0;
-    let total = effectiveScreens.length; // Utilise la liste filtrée
+    let total = 0;
 
+    // Calcul du titre et de la numérotation selon le mode
     if (window.tab === 'tv') {
-        // On calcule l'index en fonction de la taille réduite
+        const effectiveScreens = (window.innerWidth <= 850) 
+            ? window.TVSCREENS.filter((_, index) => index !== 4) 
+            : window.TVSCREENS;
+        total = effectiveScreens.length;
         current = (window.tvIndex % total) + 1;
         title = effectiveScreens[window.tvIndex % total].name;
     } else {
@@ -4244,12 +4247,16 @@ function mobileHeader() {
 
     return `
     <header class="mobile-header" style="background:#040e1a; padding:10px 15px; border-bottom:2px solid var(--gold);">
+        <!-- Container Flex pour aligner Logo et Titre verticalement -->
         <div style="display:flex; align-items:center; gap:10px; margin-bottom:5px;">
-            <img src="assets/logo-nazario.png" style="height:30px;" alt="Logo">
-            <h2 style="color:var(--gold); margin:0; font-size:1.1rem; font-family:Impact, sans-serif;">NAZARIO</h2>
+            <img src="assets/logo-nazario.png" style="height:40px; width:auto;" alt="Logo">
+            <h2 style="color:var(--gold); margin:0; font-size:1.1rem; font-family:Impact, sans-serif; line-height:1.1;">
+                NAZARIO<br>ULIS CUP
+            </h2>
         </div>
+        <!-- Indicateur Écran X/Y -->
         <div style="color:var(--gold); font-size:0.75rem; font-weight:bold; letter-spacing:1px; border-top:1px solid #333; padding-top:5px; text-transform:uppercase;">
-            ÉCRAN ${current}/${total} • ${title}
+            ${window.tab === 'tv' ? `ÉCRAN ${current}/${total} • ${title}` : title}
         </div>
     </header>`;
 }
