@@ -3716,6 +3716,7 @@ function render() {
     if (!root) return;
 
     // --- LOGIQUE MOBILE ENTRY (PAGE 0) ---
+    // Si mobile (< 850px) ET qu'on n'a pas encore vu le splash
     if (window.innerWidth <= 850 && !window.hasShownSplash) {
         root.innerHTML = mobileSplashView();
         
@@ -3768,8 +3769,9 @@ function render() {
 
     // 3. Rendu HTML COMPLET
     root.innerHTML = `
+        ${window.innerWidth <= 850 ? mobileHeader() : ''}
+        
         <div class="app ${window.tab === 'tv' ? 'hidden' : ''}">
-            ${window.innerWidth <= 850 ? mobileHeader() : ''}
             <div class="top">
                 <div class="brand"><h1>${state.title}</h1></div>
                 <div class="tabs">
@@ -3777,7 +3779,9 @@ function render() {
                     <button class="tab ${window.tab==='teams'?'active':''}" onclick="window.tab='teams'; window.render()">Équipes</button>
                     <button class="tab ${window.tab==='matches'?'active':''}" onclick="window.tab='matches'; window.render()">Matchs</button>
                     <button class="tab ${window.tab==='standings'?'active':''}" onclick="window.tab='standings'; window.render()">Classements</button>
-                    <button class="tab ${window.tab==='finals'?'active':''}" onclick="window.tab='finals'; window.render()">Phases finales</button>
+                    
+                    ${window.innerWidth > 850 ? `<button class="tab ${window.tab==='finals'?'active':''}" onclick="window.tab='finals'; window.render()">Phases finales</button>` : ''}
+                    
                     <button class="tab ${window.tab==='scorers'?'active':''}" onclick="window.tab='scorers'; window.render()">Buteurs</button>
                     <button class="tab ${window.tab==='tv'?'active':''}" onclick="window.tab='tv'; window.render()">Mode TV</button>
                 </div>
@@ -3789,8 +3793,7 @@ function render() {
         ${window.tab === 'tv' ? content : ''}
         ${renderModal() || ''}
     `;
-}
-function tvPageTitle(title, color = 'var(--gold)') {
+}function tvPageTitle(title, color = 'var(--gold)') {
     return `
     <div class="pitch-head" style="--cat-color: ${color};">
         <span>${title}</span>
