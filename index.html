@@ -3019,6 +3019,16 @@ function tableStand(rows) {
         </table>
     </div>`;
 }
+
+function mobileSplashView() {
+    return `
+    <div style="height:100vh; display:flex; flex-direction:column; justify-content:center; align-items:center; background:#020305; color:white; text-align:center; padding:20px;">
+        <img src="assets/logo-nazario.png" style="width:150px; margin-bottom:20px;" alt="Logo">
+        <h1 style="font-family:Impact, sans-serif; color:var(--gold); font-size:2.5rem; margin:10px 0; text-transform:uppercase;">NAZARIO ULIS CUP</h1>
+        <div id="mobile-countdown" style="font-family:Impact, sans-serif; font-size:5rem; color:#fff; margin-top:20px;">10</div>
+    </div>`;
+}
+
 function tvComingSoon() {
     return `
     <main class="tv-screen" style="justify-content: center; align-items: center; background: #020305;">
@@ -3703,7 +3713,27 @@ function render() {
     const root = document.getElementById('root');
     if (!root) return;
 
-    // Utilise explicitement window.state
+    // --- LOGIQUE MOBILE ENTRY (PAGE 0) ---
+    // Si mobile (< 850px) et que le splash n'a pas encore été vu dans cette session
+    if (window.innerWidth <= 850 && !sessionStorage.getItem('mobileSplashSeen')) {
+        root.innerHTML = mobileSplashView();
+        
+        let count = 10;
+        const timer = setInterval(() => {
+            count--;
+            const el = document.getElementById('mobile-countdown');
+            if (el) el.innerText = count;
+            
+            if (count <= 0) {
+                clearInterval(timer);
+                sessionStorage.setItem('mobileSplashSeen', 'true'); // Marque le splash comme vu
+                render(); // Relance le rendu pour afficher l'app
+            }
+        }, 1000);
+        return; 
+    }
+    // --- FIN LOGIQUE MOBILE ENTRY ---
+
     const state = window.state;
 
     // 1. Gestion de la sécurité
@@ -3734,7 +3764,6 @@ function render() {
     }
 
     // 3. Rendu HTML COMPLET
-    // CORRECTION ICI : utilise window.state.title
     root.innerHTML = `
         <div class="app ${window.tab === 'tv' ? 'hidden' : ''}">
             <div class="top">
@@ -3756,8 +3785,7 @@ function render() {
         ${window.tab === 'tv' ? content : ''}
         ${renderModal() || ''}
     `;
-}
-function tvPageTitle(title, color = 'var(--gold)') {
+}function tvPageTitle(title, color = 'var(--gold)') {
     return `
     <div class="pitch-head" style="--cat-color: ${color};">
         <span>${title}</span>
