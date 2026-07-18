@@ -4264,34 +4264,44 @@ function mobileHeader() {
     let title = "";
     let current = 0;
     let total = 0;
+    const isTvMode = (window.tab === 'tv');
+    // On vérifie si le mode TV est réellement actif
+    const isTvActive = window.state && window.state.tv && window.state.tv.tvActive;
 
-    // Calcul du titre et de la numérotation selon le mode
-    if (window.tab === 'tv') {
+    if (isTvMode && isTvActive) {
+        // Mode TV actif : on calcule l'index avec le filtre mobile
         const effectiveScreens = (window.innerWidth <= 850) 
             ? window.TVSCREENS.filter((_, index) => index !== 4) 
             : window.TVSCREENS;
         total = effectiveScreens.length;
         current = (window.tvIndex % total) + 1;
         title = effectiveScreens[window.tvIndex % total].name;
+    } else if (isTvMode && !isTvActive) {
+        // Mode TV en attente : on affiche juste un titre simple
+        title = "EN ATTENTE";
     } else {
+        // Mode Navigation classique
         const tabs = ['admin', 'teams', 'matches', 'standings', 'finals', 'scorers'];
         total = tabs.length;
         current = tabs.indexOf(window.tab) + 1;
         title = window.tab.toUpperCase();
     }
 
+    // Le texte affiché en bas du bandeau
+    const displayLabel = (isTvMode && isTvActive) 
+        ? `ÉCRAN ${current}/${total} • ${title}` 
+        : title;
+
     return `
     <header class="mobile-header" style="background:#040e1a; padding:10px 15px; border-bottom:2px solid var(--gold);">
-        <!-- Container Flex pour aligner Logo et Titre -->
         <div style="display:flex; align-items:center; gap:10px; margin-bottom:5px;">
             <img src="assets/logo-nazario.png" style="height:40px; width:auto;" alt="Logo">
             <h2 style="color:var(--gold); margin:0; font-size:1.1rem; font-family:Impact, sans-serif; white-space: nowrap;">
                 NAZARIO ULIS CUP
             </h2>
         </div>
-        <!-- Indicateur Écran X/Y -->
         <div style="color:var(--gold); font-size:0.75rem; font-weight:bold; letter-spacing:1px; border-top:1px solid #333; padding-top:5px; text-transform:uppercase;">
-            ${window.tab === 'tv' ? `ÉCRAN ${current}/${total} • ${title}` : title}
+            ${displayLabel}
         </div>
     </header>`;
 }
