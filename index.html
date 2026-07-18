@@ -3435,8 +3435,8 @@ function tvStandMobile() {
                     <div class="pitch-head">
                         <span>${c.name}</span>
                     </div>
-                    ${teamsA.length > 0 ? `<h3 style="text-align:center; font-size:12px;">POULE A</h3>${tvtableStandMobileV2(getLiveStandings(c.id, 'A'))}` : ''}
-                    ${teamsB.length > 0 ? `<h3 style="text-align:center; font-size:12px;">POULE B</h3>${tvtableStandMobileV2(getLiveStandings(c.id, 'B'))}` : ''}
+                    ${teamsA.length > 0 ? `<h3 style="text-align:center; font-size:12px;">POULE A</h3>${tvtableStandMobile(getLiveStandings(c.id, 'A'))}` : ''}
+                    ${teamsB.length > 0 ? `<h3 style="text-align:center; font-size:12px;">POULE B</h3>${tvtableStandMobile(getLiveStandings(c.id, 'B'))}` : ''}
                 </div>`;
             }).join('')}
         </div>
@@ -3478,7 +3478,7 @@ function tvtableStand(rows) {
     </div>`;
 }
 
-function tvtableStandMobileV2(rows) {
+function tvtableStandMobile(rows) {
     const hasData = rows && rows.length > 0;
     return `
     <div class="table-container" style="overflow-x: auto; width: 100%; -webkit-overflow-scrolling: touch; background: transparent;">
@@ -3491,6 +3491,11 @@ function tvtableStandMobileV2(rows) {
                     <th style="padding: 4px 2px; color: var(--gold);">PTS</th>
                     <th style="padding: 4px 2px;">J</th>
                     <th style="padding: 4px 2px;">G</th>
+					<th style="padding: 4px 2px;">N</th>
+					<th style="padding: 4px 2px;">P</th>
+					<th style="padding: 4px 2px;">Bp</th>
+					<th style="padding: 4px 2px;">Bc</th>
+					<th style="padding: 4px 2px;">D</th>
                 </tr>
             </thead>
             <tbody>
@@ -3502,13 +3507,18 @@ function tvtableStandMobileV2(rows) {
                         <td style="padding: 6px 2px; color: var(--gold); font-weight: bold;">${r.pts ?? 0}</td>
                         <td style="padding: 6px 2px;">${r.j ?? 0}</td>
                         <td style="padding: 6px 2px;">${r.g ?? 0}</td>
+						<td style="font-size: 20px !important;">${r.n ?? 0}</td>
+                        <td style="font-size: 20px !important;">${r.p ?? 0}</td>
+                        <td style="font-size: 20px !important;">${r.bp ?? 0}</td>
+                        <td style="font-size: 20px !important;">${r.bc ?? 0}</td>
+                        <td style="font-size: 20px !important;">${r.diff ?? 0}</td>
                     </tr>
                 `).join('') : '<tr><td colspan="6" style="text-align:center; padding:10px;">Aucune donnée</td></tr>'}
             </tbody>
         </table>
     </div>`;
 }
-window.tvtableStandMobileV2 = tvtableStandMobileV2;
+window.tvtableStandMobile = tvtableStandMobile;
 
 function tvScorers() {
     const catColors = ['var(--u13-color)', 'var(--u15-color)', 'var(--u18-color)'];
