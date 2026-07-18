@@ -3449,7 +3449,6 @@ function tvtableStand(rows) {
 }
 
 function tvtableStandMobileV2(rows) {
-debugger;
     const hasData = rows && rows.length > 0;
     return `
     <div class="table-container" style="overflow-x: auto; width: 100%; -webkit-overflow-scrolling: touch; background: transparent;">
@@ -3462,8 +3461,6 @@ debugger;
                     <th style="padding: 4px 2px; color: var(--gold);">PTS</th>
                     <th style="padding: 4px 2px;">J</th>
                     <th style="padding: 4px 2px;">G</th>
-                    <th style="padding: 4px 2px;">N</th>
-                    <th style="padding: 4px 2px;">P</th>
                 </tr>
             </thead>
             <tbody>
@@ -3475,10 +3472,8 @@ debugger;
                         <td style="padding: 6px 2px; color: var(--gold); font-weight: bold;">${r.pts ?? 0}</td>
                         <td style="padding: 6px 2px;">${r.j ?? 0}</td>
                         <td style="padding: 6px 2px;">${r.g ?? 0}</td>
-                        <td style="padding: 6px 2px;">${r.n ?? 0}</td>
-                        <td style="padding: 6px 2px;">${r.p ?? 0}</td>
                     </tr>
-                `).join('') : '<tr><td colspan="8" style="text-align:center; padding:10px;">Aucune donnée</td></tr>'}
+                `).join('') : '<tr><td colspan="6" style="text-align:center; padding:10px;">Aucune donnée</td></tr>'}
             </tbody>
         </table>
     </div>`;
