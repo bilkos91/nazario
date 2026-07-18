@@ -2350,6 +2350,7 @@ table.match-table tr.day-separator td {
 
 // 2. ATTACHE-LES À WINDOW (pour que ton HTML/Console les voit)
 	window.hasSeenSplash = false;
+	window.hasShownSplash = false
 	window.uid = uid;
 	window.modal = null;
 	window.isEditing = false;
@@ -3715,8 +3716,8 @@ function render() {
     if (!root) return;
 
     // --- LOGIQUE MOBILE ENTRY (PAGE 0) ---
-    // Si mobile (< 850px) et que le splash n'a pas été vu
-    if (window.innerWidth <= 850 && !sessionStorage.getItem('mobileSplashSeen')) {
+    // Si mobile (< 850px) ET qu'on n'a pas encore vu le splash durant cette session
+    if (window.innerWidth <= 850 && !window.hasShownSplash) {
         root.innerHTML = mobileSplashView();
         
         let count = 10;
@@ -3727,13 +3728,13 @@ function render() {
             
             if (count <= 0) {
                 clearInterval(timer);
-                sessionStorage.setItem('mobileSplashSeen', 'true');
-                window.tvIndex = 0; // CORRIGÉ : Force l'index 0 ("Matchs en cours")
-                window.tvTick = 0;  // Réinitialise le timer de rotation
+                window.hasShownSplash = true; // Marque le splash comme vu
+                window.tvIndex = 0;           // Force l'affichage sur "Matchs en cours" (Index 0)
+                window.tvTick = 0;            // Reset le timer
                 render(); 
             }
         }, 1000);
-        return; 
+        return; // On arrête là pour ne pas afficher le reste
     }
     // --- FIN LOGIQUE MOBILE ENTRY ---
 
