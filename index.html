@@ -2723,87 +2723,97 @@ window.pauseMatch=pauseMatch;
 function resumeMatch(id){setState(s=>{let m=s.matches.find(x=>x.id===id);if(!m||m.status!=='paused')return;m.lastStartedAt=Date.now();m.status='live'})}
 window.resumeMatch=resumeMatch;
 function finishMatch(id) {
-    // 1. Récupération du match
     let m = window.state.matches.find(x => x.id === id);
-    if (!m) {
-        console.error("Match introuvable :", id);
-        return;
-    }
+    if (!m) return;
+
+    // Récupère les buts déjà enregistrés pour ce match dans le state
+    let matchGoals = (window.state.goals || []).filter(g => g.match === id);
     
-    // 2. On ouvre la modale directement, sans aucune vérification de score.
-    // Cela permet de gérer le 0-0 ou n'importe quel score.
+    // Fonction qui prépare la liste des buteurs pour une équipe
+    const getScorersForTeam = (teamId, count) => {
+        const teamGoals = matchGoals.filter(g => g.team === teamId);
+        // On crée un tableau vide de la taille du score
+        let arr = new Array(count).fill(''); 
+        
+        // On remplit le tableau avec les noms ou "CSC" trouvés
+        teamGoals.forEach((g, idx) => {
+            if (idx < count) arr[idx] = g.isCSC ? 'CSC' : g.player;
+        });
+        return arr;
+    };
+
     window.modal = {
         type: 'scorers',
         match: id,
-        a: Array.from({length: parseInt(m.sa) || 0}, () => ''),
-        b: Array.from({length: parseInt(m.sb) || 0}, () => '')
+        // On remplit avec les données existantes (ou des cases vides si score > buts enregistrés)
+        a: getScorersForTeam(m.a, parseInt(m.sa) || 0),
+        b: getScorersForTeam(m.b, parseInt(m.sb) || 0),
+        winner: m.winner
     };
     
-    // 3. Rafraîchissement pour afficher la modale
+    console.log("DEBUG - Ouverture modale avec buteurs :", window.modal);
     render();
 }
 window.finishMatch = finishMatch;
 // 2. Version debuggée de confirmScorers
 function confirmScorers() {
-    if (!window.modal) {
-        console.error("Aucune modale active.");
-        return;
-    }
+    if (!window.modal) return;
 
     const state = window.state;
     let m = state.matches.find(x => x.id === window.modal.match);
     if (!m) return;
 
-    // 1. Calcul des scores actuels
     let sa = parseInt(m.sa) || 0;
     let sb = parseInt(m.sb) || 0;
 
-    // 2. Nettoyage des tableaux
     let scorersA = (window.modal.a || []).filter(p => p && p.trim() !== "");
     let scorersB = (window.modal.b || []).filter(p => p && p.trim() !== "");
 
-    // 3. VÉRIFICATION
-    if (scorersA.length !== sa) {
-        alert(`Attention : Tu as saisi ${sa} but(s) pour l'équipe A, mais tu as sélectionné ${scorersA.length} buteur(s).`);
-        return;
-    }
-    if (scorersB.length !== sb) {
-        alert(`Attention : Tu as saisi ${sb} but(s) pour l'équipe B, mais tu as sélectionné ${scorersB.length} buteur(s).`);
+    if (scorersA.length !== sa || scorersB.length !== sb) {
+        alert("Attention : Le nombre de buteurs sélectionnés ne correspond pas au score.");
         return;
     }
 
-    // 4. Enregistrement
-    let catId = m.cat; // On capture la catégorie avant de fermer la modale
+    let catId = m.cat;
     
     setState(s => {
         let match = s.matches.find(x => x.id === window.modal.match);
         if (!match) return;
 
         if (!s.goals) s.goals = [];
-
         match.status = 'done';
         match.endedAt = Date.now();
         match.winner = window.modal.winner || (sa > sb ? match.a : (sb > sa ? match.b : null));
         
         s.goals = s.goals.filter(g => g.match !== match.id);
-        scorersA.forEach(p => s.goals.push({match: match.id, cat: match.cat, team: match.a, player: p}));
-        scorersB.forEach(p => s.goals.push({match: match.id, cat: match.cat, team: match.b, player: p}));
+
+        // Traitement simplifié : on vérifie juste si c'est "CSC"
+        const addGoal = (playerInput, teamId) => {
+            s.goals.push({
+                match: match.id, 
+                cat: match.cat, 
+                team: teamId, 
+                player: playerInput === 'CSC' ? 'CSC' : playerInput,
+                isCSC: (playerInput === 'CSC')
+            });
+        };
+
+        scorersA.forEach(p => addGoal(p, match.a));
+        scorersB.forEach(p => addGoal(p, match.b));
 
         if (typeof updateNextMatch === 'function') updateNextMatch(s, match);
         window.modal = null;
     });
 
-    // 5. Automatisation du Bracket
-    // Appel direct de la génération pour cette catégorie
-    // On lance la génération automatique en arrière-plan
-window.generateAllKnockoutPhasesSilent();
-	if (typeof window.generateNextFinalRound === 'function') {
+    window.generateAllKnockoutPhasesSilent();
+    if (typeof window.generateNextFinalRound === 'function') {
         window.generateNextFinalRound(catId);
     }
 
     window.save(); 
     render();
 }
+window.confirmScorers = confirmScorers;
 window.confirmScorers = confirmScorers;
 
 
@@ -3564,20 +3574,34 @@ window.tvtableStandMobile = tvtableStandMobile;
 
 function tvScorers() {
     const catColors = ['var(--u13-color)', 'var(--u15-color)', 'var(--u18-color)'];
+    
     return `<main class="tv-screen">
         <div class="scorers-grid-v9">
-            ${state.cats.slice(0, 3).map((c, i) => `
+            ${state.cats.slice(0, 3).map((c, i) => {
+                // Filtre agressif : on retire tout ce qui contient "CSC" ou est vide
+                const topScorers = scorers(c.id).filter(r => {
+                    const name = (r.player || "").toUpperCase();
+                    return name !== "CSC" && !name.includes("(CSC)") && name.trim() !== "";
+                }).slice(0, 12);
+                
+                return `
                 <section class="board-v9" style="--cat-color: ${catColors[i % catColors.length]}">
                     <div class="pitch-head">
                         <span>${c.name}</span>
                     </div>
                     <table class="scorer-table-v9">
                         <thead><tr><th>#</th><th>Joueur</th><th>Équipe</th><th>Buts</th></tr></thead>
-                        <tbody>${scorers(c.id).slice(0, 12).map((r, n) => `
-                            <tr><td>${n + 1}</td><td>${r.player}</td><td><span class="team-mini">${flagHTML(r.team)} ${r.team.country}</span></td><td><b>${r.goals}</b></td></tr>
-                        `).join('') || '<tr><td colspan="4" style="text-align:center;">Aucun buteur</td></tr>'}</tbody>
+                        <tbody>${topScorers.length > 0 ? topScorers.map((r, n) => `
+                            <tr>
+                                <td>${n + 1}</td>
+                                <td>${r.player}</td>
+                                <td><span class="team-mini">${flagHTML(r.team)} ${r.team.country}</span></td>
+                                <td><b>${r.goals}</b></td>
+                            </tr>
+                        `).join('') : '<tr><td colspan="4" style="text-align:center;">Aucun buteur</td></tr>'}</tbody>
                     </table>
-                </section>`).join('')}
+                </section>`;
+            }).join('')}
         </div>
     </main>`;
 }
@@ -3642,12 +3666,10 @@ function tvNext() {
     </main>`;
 }
 function renderModal() {
-    // On utilise la variable globale window.modal
     if (!window.modal) return '';
     
-    // On crée une référence locale 'm'
     const m = window.modal;
-    const state = window.state; // Accès à l'état global
+    const state = window.state; 
     
     // --- MODE JOUEURS ---
     if (m.type === 'players') {
@@ -3655,10 +3677,7 @@ function renderModal() {
         return `<div class="modal">
             <div class="modalbox">
                 <h2>Joueurs ${flagHTML(t, t.country)} ${t.country}</h2>
-                <textarea rows="14" 
-                        onfocus="window.isEditing=true" 
-                        onblur="window.isEditing=false; render()" 
-                        onchange="window.modal.text=this.value">${m.text || ''}</textarea>
+                <textarea rows="14" onfocus="window.isEditing=true" onblur="window.isEditing=false; render()" onchange="window.modal.text=this.value">${m.text || ''}</textarea>
                 <div class="actions">
                     <button class="good" onclick="savePlayers()">Enregistrer</button>
                     <button onclick="window.modal=null;render()">Annuler</button>
@@ -3686,6 +3705,7 @@ function renderModal() {
                                 <span class="goal-label">But ${i + 1}</span>
                                 <select onfocus="window.isEditing=true" onblur="window.isEditing=false; render()" onchange="window.modal.a[${i}]=this.value">
                                     <option value="">Choisir...</option>
+                                    <option value="CSC">CSC (But contre son camp)</option>
                                     ${a.players.map(p => `<option value="${p.name}" ${v === p.name ? 'selected' : ''}>${p.name}</option>`).join('')}
                                 </select>
                             </div>
@@ -3698,6 +3718,7 @@ function renderModal() {
                                 <span class="goal-label">But ${i + 1}</span>
                                 <select onfocus="window.isEditing=true" onblur="window.isEditing=false; render()" onchange="window.modal.b[${i}]=this.value">
                                     <option value="">Choisir...</option>
+                                    <option value="CSC">CSC (But contre son camp)</option> <!-- OPTION AJOUTÉE ICI -->
                                     ${b.players.map(p => `<option value="${p.name}" ${v === p.name ? 'selected' : ''}>${p.name}</option>`).join('')}
                                 </select>
                             </div>
