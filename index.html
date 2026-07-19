@@ -2386,9 +2386,12 @@ table.match-table tr.day-separator td {
 	window.isEditing = false;
 	window.tvIndex = 0;
 	window.TVSCREENS = [
-    { name: 'Matchs en cours', func: tvLive },
+    { 
+        name: 'Classements', 
+        // Si largeur < 850px, on appelle tvStandMobile, sinon tvStand
+        func: () => (window.innerWidth <= 850 ? tvStandMobile() : tvStand()) 
+    },
     { name: 'Meilleurs buteurs', func: tvScorers },
-    { name: 'Prochains matchs', func: tvNext },
     { name: 'Tableau Final', func: tvBracket }
 ];
 	window.tvTick = 0;
@@ -2558,25 +2561,23 @@ window.applySchedule = function(matches) {
         t2_aft[m.cat] = current + spacing;
     });
     
-    console.log("DEBUG: Planning recalculé (Version 100% autonome).");
 };
 
 function roundRobin(arr){let a=[...arr];if(a.length%2)a.push(null);let rounds=[];for(let r=0;r<a.length-1;r++){let games=[];for(let i=0;i<a.length/2;i++){let x=a[i],y=a[a.length-1-i];if(x&&y)games.push(r%2?[y,x]:[x,y])}rounds.push(games);a.splice(1,0,a.pop())}return rounds}
 window.roundRobin=roundRobin;
 function genMatches() {
-    console.log("DEBUG: Lancement de genMatches...");
+
     
     // On force l'utilisation de l'état global récent
     const state = window.state;
     
     setState(s => {
         s.matches = [];
-        console.log("DEBUG: Categories trouvées :", s.cats.length);
         
         s.cats.forEach((cat, catIndex) => {
             // Utilise window.catTeams pour être sûr d'avoir la dernière version
             const teamsInCat = window.catTeams(cat.id);
-            console.log(`DEBUG: Catégorie ${cat.name} (${cat.id}) - Équipes trouvées :`, teamsInCat.length);
+
             
             let pools = { 
                 A: teamsInCat.filter(t => t.pool === 'A'), 
@@ -2637,13 +2638,11 @@ function genMatches() {
             });
         });
         
-        console.log(`DEBUG: Total matchs générés : ${s.matches.length}`);
         
         // Appel final
         if (typeof window.applySchedule === 'function') {
             window.applySchedule(s.matches);
         } else {
-            console.error("ERREUR : La fonction applySchedule() n'est pas définie.");
         }
     });
     
@@ -2781,7 +2780,6 @@ function confirmScorers() {
         
         s.goals = s.goals.filter(g => g.match !== match.id);
 
-        // Traitement simplifié : on vérifie juste si c'est "CSC"
         const addGoal = (playerInput, teamId) => {
             s.goals.push({
                 match: match.id, 
@@ -2795,11 +2793,13 @@ function confirmScorers() {
         scorersA.forEach(p => addGoal(p, match.a));
         scorersB.forEach(p => addGoal(p, match.b));
 
-        if (typeof updateNextMatch === 'function') updateNextMatch(s, match);
+        // On enlève updateNextMatch ici car il cause des conflits avec la logique manuelle
         window.modal = null;
     });
 
-    window.generateAllKnockoutPhasesSilent();
+    // NE PAS APPELER generateAllKnockoutPhasesSilent() ICI
+    
+    // On appelle seulement la fonction qui place le gagnant dans le match suivant
     if (typeof window.generateNextFinalRound === 'function') {
         window.generateNextFinalRound(catId);
     }
@@ -2888,53 +2888,269 @@ function generateNextFinalRound(cid) {
     const state = window.state;
     let phases = ['BARRAGE', 'QF', 'SF', 'F'];
     
-    // --- CORRECTION : On cherche la phase qui contient au moins UN match PAS ENCORE TERMINÉ ---
-    let current = phases.find(p => 
-        state.matches.some(m => m.cat === cid && m.phase === p && m.status !== 'done')
-    );
+    // 1. Trouver la phase actuelle (celle qui n'est pas terminée)
+    let current = phases.find(p => state.matches.some(m => m.cat === cid && m.phase === p && m.status !== 'done'));
 
-    if (!current) { 
-        alert("Toutes les phases sont déjà terminées !"); 
-        return; 
-    }
-    
-    // Si on est déjà en finale, on ne peut pas générer de tour suivant
+    if (!current) { alert("Aucune phase en cours."); return; }
     if (current === 'F') { alert('La finale est déjà terminée.'); return; }
 
-    // 2. Récupérer tous les vainqueurs des matchs terminés de la phase actuelle
+    // 2. Récupérer les vainqueurs de la phase actuelle
     let winners = state.matches
         .filter(m => m.cat === cid && m.phase === current && m.status === 'done')
-        .map(m => m.winner || (m.sa > m.sb ? m.a : m.b))
+        .map(m => m.winner || (parseInt(m.sa) > parseInt(m.sb) ? m.a : m.b))
         .filter(Boolean);
 
-    if (winners.length === 0) {
-        alert("Aucun nouveau vainqueur trouvé dans cette phase.");
-        return;
-    }
+    // 3. Déterminer la phase suivante
+    let nextMap = { 'BARRAGE': 'SF', 'QF': 'SF', 'SF': 'F' };
+    let next = nextMap[current];
 
-    // 3. Remplissage
+    // 4. Placement flexible : on cherche les matchs de la phase suivante
     setState(s => {
-        let nextMap = { 'BARRAGE': 'SF', 'QF': 'SF', 'SF': 'F' };
-        let next = nextMap[current];
         let nextMatches = s.matches.filter(m => m.cat === cid && m.phase === next);
+        
+        winners.forEach(winnerId => {
+            // Cherche un match dans la phase suivante qui a une place "TBD"
+            let targetMatch = nextMatches.find(m => 
+                (typeof m.a === 'string' && m.a.includes('TBD')) || 
+                (typeof m.b === 'string' && m.b.includes('TBD'))
+            );
 
-        let winnerIdx = 0;
-        nextMatches.forEach(m => {
-            const isPlaceholder = (id) => typeof id === 'string' && (id.includes('TBD') || id.includes('VAINQUEUR'));
-
-            if (winnerIdx < winners.length && isPlaceholder(m.a)) {
-                m.a = winners[winnerIdx++];
-            }
-            if (winnerIdx < winners.length && isPlaceholder(m.b)) {
-                m.b = winners[winnerIdx++];
+            if (targetMatch) {
+                if (typeof targetMatch.a === 'string' && targetMatch.a.includes('TBD')) {
+                    targetMatch.a = winnerId;
+                } else if (typeof targetMatch.b === 'string' && targetMatch.b.includes('TBD')) {
+                    targetMatch.b = winnerId;
+                }
             }
         });
         applySchedule(s.matches);
     });
     
-    alert(`Placement effectué pour ${winners.length} équipe(s).`);
+    alert("Vainqueurs placés automatiquement dans les places TBD disponibles.");
+    render();
 }
 window.generateNextFinalRound = generateNextFinalRound;
+window.generateNextFinalRound = generateNextFinalRound;
+window.generateNextFinalRound = generateNextFinalRound;
+
+function forceFranceToSF_Corrected() {
+    setState(s => {
+        // 1. L'ID de la France est 'cxczlky'
+        const franceId = 'cxczlky';
+
+        // 2. Trouver le match de demi-finale (SF) qui contient la Norvège
+        // (On cherche le match où l'un des participants contient le nom de l'équipe Norvège)
+        const sfMatch = s.matches.find(m => 
+            m.phase === 'SF' && 
+            (team(m.a).country === 'Norvège' || team(m.b).country === 'Norvège')
+        );
+
+        if (!sfMatch) { 
+            alert("Match de demi-finale avec la Norvège introuvable !"); 
+            return; 
+        }
+
+        // 3. Placer la France dans la place disponible (TBD)
+        // On vérifie les deux slots (a et b)
+        if (typeof sfMatch.a === 'string' && sfMatch.a.includes('TBD')) {
+            sfMatch.a = franceId;
+            console.log("France placée en position A du match SF");
+        } else if (typeof sfMatch.b === 'string' && sfMatch.b.includes('TBD')) {
+            sfMatch.b = franceId;
+            console.log("France placée en position B du match SF");
+        } else {
+            alert("Aucune place disponible (TBD) trouvée dans ce match.");
+            return;
+        }
+        
+        // S'assurer que le match est bien actif
+        sfMatch.status = 'todo';
+    });
+    render();
+    alert("France placée en demi-finale contre la Norvège !");
+}
+window.forceFranceToSF_Corrected = forceFranceToSF_Corrected;
+// Lancer la correction
+//forceFranceToSF_Corrected();
+
+function forceJaponToSF() {
+    setState(s => {
+        // 1. Trouver les équipes par leur nom
+        const japon = s.teams.find(t => t.country.trim() === 'Japon');
+        const coree = s.teams.find(t => t.country.trim() === 'Corée du Sud');
+        const senegal = s.teams.find(t => t.country.trim() === 'Sénégal');
+        
+        if (!japon || !coree) { 
+            alert("Équipe Japon ou Corée du Sud introuvable dans la base !"); 
+            return; 
+        }
+
+        // 2. Forcer la validation du Quart de Finale Japon vs Sénégal (0-0, Vainqueur : Japon)
+        if (senegal) {
+            const qfMatch = s.matches.find(m => 
+                m.phase === 'QF' && 
+                ((m.a === japon.id && m.b === senegal.id) || (m.a === senegal.id && m.b === japon.id))
+            );
+            if (qfMatch) {
+                qfMatch.winner = japon.id;
+                qfMatch.status = 'done';
+                qfMatch.sa = 0;
+                qfMatch.sb = 0;
+                console.log("✅ Quart de finale Japon - Sénégal validé (Japon vainqueur aux TAB).");
+            }
+        }
+
+        // 3. Trouver la demi-finale (SF) de la catégorie qui contient déjà la Corée du Sud
+        const sfMatch = s.matches.find(m => 
+            m.phase === 'SF' && 
+            (m.a === coree.id || m.b === coree.id)
+        );
+
+        if (!sfMatch) { 
+            alert("❌ Match de demi-finale avec la Corée du Sud introuvable !"); 
+            return; 
+        }
+
+        // 4. Remplacer le placeholder restant par l'ID du Japon
+        const isPlaceholder = (id) => typeof id === 'string' && (id.includes('TBD') || id.includes('VAINQUEUR'));
+
+        if (isPlaceholder(sfMatch.a)) {
+            sfMatch.a = japon.id;
+            console.log("Japon placé en position A de la demi-finale.");
+        } else if (isPlaceholder(sfMatch.b)) {
+            sfMatch.b = japon.id;
+            console.log("Japon placé en position B de la demi-finale.");
+        } else {
+            alert("Aucune place vacante (TBD/VAINQUEUR) trouvée face à la Corée du Sud.");
+            return;
+        }
+        
+        // Remettre le match prêt à être joué
+        sfMatch.status = 'todo';
+    });
+    render();
+    alert("Japon qualifié et placé en demi-finale contre la Corée du Sud !");
+}
+
+// Lancement automatique du correctif
+//forceJaponToSF();
+window.forceJaponToSF = forceJaponToSF;
+function forceMarocToFinal() {
+    setState(s => {
+        // 1. Trouver l'équipe "Maroc"
+        const maroc = s.teams.find(t => t.country && t.country.trim() === 'Maroc');
+        // 2. Trouver la catégorie "Grands"
+        const grandsCat = s.cats.find(c => c.name && c.name.trim() === 'Grands');
+        
+        if (!maroc) { alert("Équipe Maroc non trouvée !"); return; }
+        if (!grandsCat) { alert("Catégorie 'Grands' non trouvée !"); return; }
+
+        // 3. Trouver le match de finale
+        const finalMatch = s.matches.find(m => m.phase === 'F' && m.cat === grandsCat.id);
+        
+        if (finalMatch) {
+            // Si la position A est vide ou un placeholder, on place le Maroc en A
+            // Sinon on le place en B
+            if (!finalMatch.a || finalMatch.a.includes('TBD') || finalMatch.a.includes('VAINQUEUR')) {
+                finalMatch.a = maroc.id;
+                console.log("Maroc placé en position A de la finale");
+            } else {
+                finalMatch.b = maroc.id;
+                console.log("Maroc placé en position B de la finale");
+            }
+            
+            // On s'assure que le match est bien actif
+            finalMatch.status = 'todo';
+            finalMatch.sa = 0;
+            finalMatch.sb = 0;
+        } else {
+            alert("Match de finale introuvable dans le système.");
+        }
+    });
+    render();
+    alert("Maroc forcé en finale des Grands !");
+}
+
+window.forceMarocToFinal = forceMarocToFinal;
+//forceMarocToFinal();
+
+function openPlayerSelectionModal() {
+    let allPlayers = [];
+    state.teams.forEach(t => {
+        t.players.forEach(p => {
+            allPlayers.push({ name: p.name, team: t.country });
+        });
+    });
+    // On trie par nom pour faciliter la recherche
+    allPlayers.sort((a,b) => a.name.localeCompare(b.name));
+
+    window.modal = { type: 'selectPlayer', allPlayers: allPlayers, selectedPlayer: allPlayers[0]?.name || '' };
+    render();
+}
+window.openPlayerSelectionModal = openPlayerSelectionModal;
+
+// Filtre et affiche les matchs du joueur sélectionné
+function showPlayerStats() {
+    const playerName = window.modal.selectedPlayer;
+    const playerGoals = state.goals.filter(g => g.player === playerName);
+    const matchIds = [...new Set(playerGoals.map(g => g.match))];
+    const matches = state.matches.filter(m => matchIds.includes(m.id));
+
+    window.modal = {
+        type: 'playerMatches',
+        playerName: playerName,
+        matches: matches
+    };
+    render();
+}
+window.showPlayerStats = showPlayerStats;
+
+function resetCategoryKnockout(cid) {
+    setState(s => {
+        // Supprime tous les matchs qui ne sont pas des poules (donc tous les QF, SF, F, BARRAGES)
+        s.matches = s.matches.filter(m => !(m.cat === cid && m.phase !== 'GROUP'));
+    });
+    alert("Matchs de phases finales supprimés pour la catégorie. Tu peux maintenant les régénérer.");
+    render();
+}
+window.resetCategoryKnockout = resetCategoryKnockout;
+
+function clearSF(catId) {
+    setState(s => {
+        s.matches.forEach(m => {
+            if (m.cat === catId && m.phase === 'SF') {
+                m.a = 'TBD';
+                m.b = 'TBD';
+                m.status = 'todo';
+                m.sa = 0;
+                m.sb = 0;
+            }
+        });
+    });
+    render();
+    alert("Demi-finales vidées pour la catégorie " + catId);
+}
+
+function clearAllSF() {
+    if (!confirm("ATTENTION : Cela va supprimer les équipes de TOUTES les demi-finales de toutes les catégories. Continuer ?")) return;
+    
+    setState(s => {
+        s.matches.forEach(m => {
+            if (m.phase === 'SF') {
+                m.a = 'TBD';
+                m.b = 'TBD';
+                m.sa = 0;
+                m.sb = 0;
+                m.winner = null;
+                m.status = 'todo';
+            }
+        });
+    });
+    alert("Toutes les demi-finales ont été réinitialisées.");
+    render();
+}
+window.clearAllSF = clearAllSF;
+
 function updateNextMatch(state, currentMatch) {
     if (currentMatch.phase === 'GROUP') return;
     
@@ -3061,7 +3277,7 @@ function mobileSplashView() {
     <div style="height:100vh; display:flex; flex-direction:column; justify-content:center; align-items:center; background:#020305; color:white; text-align:center; padding:20px;">
         <img src="assets/logo-nazario.png" style="width:150px; margin-bottom:20px;" alt="Logo">
         <h1 style="font-family:Impact, sans-serif; color:var(--gold); font-size:2.5rem; margin:10px 0; text-transform:uppercase;">NAZARIO ULIS CUP</h1>
-        <div id="mobile-countdown" style="font-family:Impact, sans-serif; font-size:5rem; color:#fff; margin-top:20px;">10</div>
+        <div id="mobile-countdown" style="font-family:Impact, sans-serif; font-size:5rem; color:#fff; margin-top:20px;">5</div>
     </div>`;
 }
 
@@ -3089,6 +3305,49 @@ function tvComingSoon() {
         </div>
     </main>`;
 }
+function debugGoalsIntegrity() {
+    const state = window.state;
+    const goals = state.goals || [];
+    const matches = state.matches || [];
+
+    console.group("🔍 Rapport d'intégrité : Buts vs Matchs");
+
+    // 1. Détection des Buts Fantômes
+    const ghostGoals = goals.filter(g => !matches.find(m => m.id === g.match));
+    if (ghostGoals.length > 0) {
+        console.warn(`⚠️ ${ghostGoals.length} But(s) fantôme(s) détecté(s) (Buts sans match associé) :`);
+        console.table(ghostGoals);
+    } else {
+        console.log("✅ Aucun but fantôme trouvé.");
+    }
+
+    // 2. Détection des Matchs avec score incohérent
+    const finishedMatches = matches.filter(m => m.status === 'done');
+    const inconsistentMatches = [];
+
+    finishedMatches.forEach(m => {
+        const goalsForMatch = goals.filter(g => g.match === m.id);
+        const totalScore = (parseInt(m.sa) || 0) + (parseInt(m.sb) || 0);
+        
+        if (totalScore > 0 && goalsForMatch.length === 0) {
+            inconsistentMatches.push({ matchId: m.id, issue: "Score > 0 mais aucun but enregistré", score: totalScore });
+        } else if (goalsForMatch.length !== totalScore) {
+            inconsistentMatches.push({ matchId: m.id, issue: `Score total (${totalScore}) ne correspond pas au nb de buts enregistrés (${goalsForMatch.length})`, score: totalScore });
+        }
+    });
+
+    if (inconsistentMatches.length > 0) {
+        console.warn(`⚠️ ${inconsistentMatches.length} Match(s) avec des erreurs de saisie de buts :`);
+        console.table(inconsistentMatches);
+    } else {
+        console.log("✅ Cohérence score/buts vérifiée pour tous les matchs terminés.");
+    }
+
+    console.groupEnd();
+    alert("Analyse terminée. Ouvre la console (F12) pour voir les détails.");
+}
+//debugGoalsIntegrity();
+
 function admin(){
 const state = window.state;
     return `
@@ -3108,6 +3367,9 @@ const state = window.state;
                 <button class="good" onclick="window.genMatches()">Générer les matchs A/B</button>
 				<button class="bad" onclick="window.resetTournament()">Réinitialiser</button>
                 <button onclick="window.generatePaperVersion()" style="padding: 10px 20px; font-size: 16px; cursor: pointer;">Imprimer la version papier</button>
+				<b<button class="warn" onclick="window.openPlayerSelectionModal()">
+    🔍 Vérifier stats d'un joueur
+</button>
                 <div class="card">
                     <h2>Sauvegardes (JSON)</h2>
                     <div class="row">
@@ -3221,7 +3483,6 @@ function matchesView() {
     const state = window.state; // Obligatoire pour lire les données à jour
     const matches = sortedMatches(); // On récupère les données
     
-    console.log("DEBUG: matchesView - Matches trouvés:", matches ? matches.length : "AUCUN");
 
     if (!matches || matches.length === 0) {
         return '<div class="card">Aucun match trouvé dans le système.</div>';
@@ -3712,7 +3973,7 @@ function renderModal() {
                                 <span class="goal-label">But ${i + 1}</span>
                                 <select onfocus="window.isEditing=true" onblur="window.isEditing=false; render()" onchange="window.modal.b[${i}]=this.value">
                                     <option value="">Choisir...</option>
-                                    <option value="CSC">CSC (But contre son camp)</option> <!-- OPTION AJOUTÉE ICI -->
+                                    <option value="CSC">CSC (But contre son camp)</option>
                                     ${b.players.map(p => `<option value="${p.name}" ${v === p.name ? 'selected' : ''}>${p.name}</option>`).join('')}
                                 </select>
                             </div>
@@ -3737,6 +3998,46 @@ function renderModal() {
             </div>
         </div>`;
     }
+
+    // --- NOUVEAU : SÉLECTION JOUEUR (Admin) ---
+    if (m.type === 'selectPlayer') {
+        return `<div class="modal">
+            <div class="modalbox">
+                <h2>Vérifier les buts d'un joueur</h2>
+                <select style="width:100%; padding:10px; margin:20px 0; background: #1a1f28; color: white;" 
+                    onchange="window.modal.selectedPlayer = this.value">
+                    ${m.allPlayers.map(p => `<option value="${p.name}" ${m.selectedPlayer === p.name ? 'selected' : ''}>${p.name} (${p.team})</option>`).join('')}
+                </select>
+                <div class="actions">
+                    <button class="good" onclick="showPlayerStats()">Vérifier</button>
+                    <button onclick="window.modal=null; render()">Annuler</button>
+                </div>
+            </div>
+        </div>`;
+    }
+
+    // --- NOUVEAU : RÉSULTATS MATCHS JOUEUR (Admin) ---
+    if (m.type === 'playerMatches') {
+        return `<div class="modal">
+            <div class="modalbox">
+                <h2>Matchs de ${m.playerName}</h2>
+                <div style="margin-top: 15px; color: white;">
+                    ${m.matches.length > 0 ? m.matches.map(match => {
+                        const tA = team(match.a);
+                        const tB = team(match.b);
+                        return `<div style="padding: 10px; border-bottom: 1px solid #333; display: flex; justify-content: space-between;">
+                            <span>${tA.country} vs ${tB.country}</span>
+                            <strong>${match.sa} - ${match.sb}</strong>
+                        </div>`;
+                    }).join('') : '<p>Ce joueur n\'a pas marqué de but dans les matchs enregistrés.</p>'}
+                </div>
+                <div class="actions">
+                    <button onclick="window.modal=null; render()">Fermer</button>
+                </div>
+            </div>
+        </div>`;
+    }
+
     return '';
 }
 function savePlayers() {
@@ -3768,7 +4069,7 @@ function render() {
         window.isSplashRunning = true; // On verrouille
         root.innerHTML = mobileSplashView();
         
-        let count = 10;
+        let count = 5;
         const timer = setInterval(() => {
             count--;
             const el = document.getElementById('mobile-countdown');
