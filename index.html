@@ -3576,7 +3576,7 @@ function tvScorers() {
                 const topScorers = scorers(c.id).filter(r => {
                     const name = (r.player || "").toUpperCase();
                     return name !== "CSC" && !name.includes("(CSC)") && name.trim() !== "";
-                }).slice(0, 12);
+                }).slice(0, 20);
                 
                 return `
                 <section class="board-v9" style="--cat-color: ${catColors[i % catColors.length]}">
