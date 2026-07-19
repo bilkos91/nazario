@@ -2387,15 +2387,9 @@ table.match-table tr.day-separator td {
 	window.tvIndex = 0;
 	window.TVSCREENS = [
     { name: 'Matchs en cours', func: tvLive },
-    { 
-        name: 'Classements', 
-        // Si largeur < 850px, on appelle tvStandMobile, sinon tvStand
-        func: () => (window.innerWidth <= 850 ? tvStandMobile() : tvStand()) 
-    },
     { name: 'Meilleurs buteurs', func: tvScorers },
     { name: 'Prochains matchs', func: tvNext },
-    { name: 'Tableau Final', func: tvBracket },
-    { name: 'Nos partenaires', func: tvPartners }
+    { name: 'Tableau Final', func: tvBracket }
 ];
 	window.tvTick = 0;
 	window.WC = WC;
